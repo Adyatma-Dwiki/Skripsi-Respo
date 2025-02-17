@@ -47,11 +47,18 @@ void loop() {
     if (!showMessage || millis() > timeHiddenUntil) {  
         if (millis() - lastTimeUpdate > 1000) {  // Update jam setiap 1 detik
             lastTimeUpdate = millis();
+            
+            // **Bersihkan layar hanya saat pertama kali kembali ke mode jam**
+            if (showMessage) {
+                tft.fillScreen(TFT_BLACK); // Hapus sisa tampilan pesan
+                showMessage = false;       // Reset status pesan
+            }
+            
             displayTime();
         }
-        showMessage = false;  // Pastikan status pesan kembali normal
     }
 
     delay(100);
 }
+
 
