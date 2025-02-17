@@ -39,17 +39,19 @@ void setup() {
 }
 
 void loop() {
-    client.loop();
+    client.loop(); // Proses MQTT
+
     static unsigned long lastTimeUpdate = 0;
 
-    if (millis() - lastTimeUpdate > 1000) {
-        lastTimeUpdate = millis();
-        displayTime();
-    }
-
-    if (!client.connected()) {
-        reconnectMQTT();
+    // Jika tidak ada pesan aktif atau sudah lewat 2 menit sejak terakhir pesan
+    if (!showMessage || millis() > timeHiddenUntil) {  
+        if (millis() - lastTimeUpdate > 1000) {  // Update jam setiap 1 detik
+            lastTimeUpdate = millis();
+            displayTime();
+        }
+        showMessage = false;  // Pastikan status pesan kembali normal
     }
 
     delay(100);
 }
+
