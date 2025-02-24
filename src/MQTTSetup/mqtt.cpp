@@ -7,7 +7,7 @@
 
 extern TFT_eSPI tft;  // Gunakan TFT dari main.cpp
 
-const char* mqttServer = "192.168.0.100"; 
+const char* mqttServer = "192.168.0.102"; 
 const int mqttPort = 1884;
 
 WiFiClient espClient;
@@ -51,7 +51,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
     tft.setCursor(20, 60);
     tft.setTextSize(2);
     tft.print("Table: ");
-    tft.println(table);
+    tft.println(table); 
+
+    //show data makanan
     tft.setTextSize(1);
     JsonArray foodArray = doc["food_names"].as<JsonArray>();
     int yPos = 90;
@@ -60,7 +62,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
         tft.println(foodName);
         yPos += 20;
     }
-
+    
+    //Show status data
     yPos += 10;
     tft.setCursor(40, yPos);
     tft.println(status);

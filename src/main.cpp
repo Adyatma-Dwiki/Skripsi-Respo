@@ -9,7 +9,7 @@
 #define BL 4
 #define IO2 2
 
-const char* ntpServer = "pool.ntp.org";
+const char* ntpServer = "pool*ntp*org";
 const long gmtOffset_sec = 7 * 3600;
 const int daylightOffset_sec = 0;
 
@@ -54,7 +54,7 @@ void loop() {
                 showMessage = false;       // Reset status pesan
             }
             
-            displayTime();
+            // displayTime();
         }
     }
 
