@@ -5,9 +5,9 @@
 #include <ArduinoJson.h>
 #include <TFT_eSPI.h>
 
-extern TFT_eSPI tft;  // Gunakan TFT dari main.cpp
+extern TFT_eSPI tft; // Gunakan TFT dari main.cpp
 
-const char* mqttServer = "192.168.0.102"; 
+const char *mqttServer = "192.168.0.100";
 const int mqttPort = 1884;
 
 WiFiClient espClient;
@@ -18,13 +18,15 @@ bool showMessage = false;
 unsigned long timeHiddenUntil = 0;
 
 // Callback ketika ada pesan baru dari MQTT
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char *topic, byte *payload, unsigned int length)
+{
     Serial.print("Pesan diterima dari topik: ");
     Serial.println(topic);
 
     char receivedMessage[256] = "";
     memset(receivedMessage, 0, sizeof(receivedMessage));
-    for (int i = 0; i < length && i < sizeof(receivedMessage) - 1; i++) {
+    for (int i = 0; i < length && i < sizeof(receivedMessage) - 1; i++)
+    {
         receivedMessage[i] = (char)payload[i];
     }
 
@@ -33,62 +35,78 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     StaticJsonDocument<512> doc;
     DeserializationError error = deserializeJson(doc, receivedMessage);
-    if (error) {
+    if (error)
+    {
+
         Serial.print("JSON Parsing gagal: ");
         Serial.println(error.f_str());
         return;
     }
 
     const int table = doc["table_id"];
-    const char* status = doc["status"];
-
+    const char *status = doc["status"];
+    int xx, yy;
+    String msg = "Pesanan Baru";
+    int x = tft.fontHeight();
+    int y = tft.textWidth(msg);
     tft.fillScreen(TFT_BLACK);
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setTextSize(1);
-    tft.setCursor(40, 30);
-    tft.println("Pesanan Baru!");
+    tft.setTextSize(2);
+    xx = ((240 / 2) - (x / 2))-20;
+    yy = ((240 / 2) - (y / 2));
 
-    tft.setCursor(20, 60);
+    tft.setCursor(yy, xx);
+    tft.println(msg);
+
+    int newx = xx + 20;
+    tft.setCursor(yy, newx);
     tft.setTextSize(2);
     tft.print("Table: ");
-    tft.println(table); 
+    tft.println(table);
 
-    //show data makanan
-    tft.setTextSize(1);
-    JsonArray foodArray = doc["food_names"].as<JsonArray>();
-    int yPos = 90;
-    for (const char* foodName : foodArray) {
-        tft.setCursor(20, yPos);
-        tft.println(foodName);
-        yPos += 20;
-    }
-    
-    //Show status data
-    yPos += 10;
-    tft.setCursor(40, yPos);
+    // show data makanan
+    //  tft.setTextSize(1);
+    //  JsonArray foodArray = doc["food_names"].as<JsonArray>();
+    //  int yPos = 90;
+    //  for (const char* foodName : foodArray) {
+    //      tft.setCursor(20, yPos);
+    //      tft.println(foodName);
+    //      yPos += 20;
+    //  }
+
+    // Show status data
+    newx += 20;
+    tft.setTextSize(2);
+    tft.setCursor(yy, newx);
     tft.println(status);
 
     messageStartTime = millis();
     showMessage = true;
 
     // **Set waktu hingga displayTime() harus dihentikan (2 menit dari sekarang)**
-    timeHiddenUntil = millis() + 120000; 
+    timeHiddenUntil = millis() + 120000;
 }
 
 // Fungsi untuk menghubungkan ke MQTT
-void setupMQTT() {
+void setupMQTT()
+{
     client.setServer(mqttServer, mqttPort);
     client.setCallback(callback);
 }
 
 // Fungsi untuk memastikan koneksi tetap berjalan
-void reconnectMQTT() {
-    while (!client.connected()) {
+void reconnectMQTT()
+{
+    while (!client.connected())
+    {
         Serial.println("Menghubungkan ke MQTT...");
-        if (client.connect("ESP32Client")) {
+        if (client.connect("ESP32Client"))
+        {
             Serial.println("Terhubung ke MQTT!");
             client.subscribe("dapur/order");
-        } else {
+        }
+        else
+        {
             Serial.print("Gagal, kode error: ");
             Serial.println(client.state());
             delay(5000);

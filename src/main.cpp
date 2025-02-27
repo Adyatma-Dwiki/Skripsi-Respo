@@ -28,14 +28,14 @@ void setup() {
     connectWiFi();
 
     // Sinkronisasi waktu dengan NTP
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    delay(2000);
+    // configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+    // delay(2000);
 
     // Koneksi ke MQTT
     setupMQTT();
     reconnectMQTT();
 
-    displayTime();  // Tampilkan jam pertama kali
+    // displayTime();  // Tampilkan jam pertama kali
 }
 
 void loop() {
