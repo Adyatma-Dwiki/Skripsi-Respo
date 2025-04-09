@@ -1,8 +1,8 @@
 #include "wifi.h"
 #include <Arduino.h>
 
-const char* ssid = "SkripsiResto";
-const char* password = "makanbang";
+const char* ssid = "Kamar";
+const char* password = "kamardepan";
 
 void connectWiFi() {
     Serial.print("Menghubungkan ke WiFi: ");

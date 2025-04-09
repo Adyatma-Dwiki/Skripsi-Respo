@@ -6,16 +6,18 @@
 #include <TFT_eSPI.h>
 
 extern TFT_eSPI tft; // Gunakan TFT dari main.cpp
-
+WiFiClient espClient;  // Definisi objek WiFiClient
+PubSubClient client(espClient);  // Inisialisasi client MQTT
 const char *mqttServer = "192.168.0.100";
 const int mqttPort = 1884;
-
-WiFiClient espClient;
-PubSubClient client(espClient);
+String currentOrder = "";  // Menyimpan order saat ini
+int currentTable = 0;      // Menyimpan nomor meja aktif
 
 unsigned long messageStartTime = 0;
-bool showMessage = false;
-unsigned long timeHiddenUntil = 0;
+bool buttonPressed = false;  
+bool orderTaken = false; 
+bool hideTime = false;  // Status apakah waktu disembunyikan atau tidak
+
 
 // Callback ketika ada pesan baru dari MQTT
 void callback(char *topic, byte *payload, unsigned int length)
@@ -23,10 +25,11 @@ void callback(char *topic, byte *payload, unsigned int length)
     Serial.print("Pesan diterima dari topik: ");
     Serial.println(topic);
 
+    hideTime = true;  // Sembunyikan waktu
+
     char receivedMessage[256] = "";
     memset(receivedMessage, 0, sizeof(receivedMessage));
-    for (int i = 0; i < length && i < sizeof(receivedMessage) - 1; i++)
-    {
+    for (int i = 0; i < length && i < sizeof(receivedMessage) - 1; i++) {
         receivedMessage[i] = (char)payload[i];
     }
 
@@ -35,9 +38,7 @@ void callback(char *topic, byte *payload, unsigned int length)
 
     StaticJsonDocument<512> doc;
     DeserializationError error = deserializeJson(doc, receivedMessage);
-    if (error)
-    {
-
+    if (error) {
         Serial.print("JSON Parsing gagal: ");
         Serial.println(error.f_str());
         return;
@@ -81,10 +82,6 @@ void callback(char *topic, byte *payload, unsigned int length)
     tft.println(status);
 
     messageStartTime = millis();
-    showMessage = true;
-
-    // **Set waktu hingga displayTime() harus dihentikan (2 menit dari sekarang)**
-    timeHiddenUntil = millis() + 120000;
 }
 
 // Fungsi untuk menghubungkan ke MQTT
@@ -111,5 +108,60 @@ void reconnectMQTT()
             Serial.println(client.state());
             delay(5000);
         }
+    }
+}
+
+void sendStatus(const char *status)
+{
+    StaticJsonDocument<256> doc;
+    doc["status"] = status;
+    doc["table_id"] = currentTable;
+
+    char buffer[256];
+    serializeJson(doc, buffer);
+
+    client.publish("dapur/response", buffer);
+    Serial.println("Pesan terkirim: " + String(buffer));
+}
+
+// **Tombol untuk Mengubah Status**
+void handleButton() {
+    static bool waitingForSecondPress = false;  // Menunggu tekan kedua
+
+    if (digitalRead(BUTTON_PIN) == HIGH && !buttonPressed) {  // Tombol pertama kali ditekan
+        buttonPressed = true;
+
+        if (!waitingForSecondPress) {  
+            // **TEKANAN PERTAMA**: Pegawai mengambil pesanan
+            Serial.println("Pegawai mengambil pesanan!");
+            sendStatus("Pegawai mengambil");
+
+            // Masuk ke mode menunggu tekan kedua
+            waitingForSecondPress = true;
+        } else {
+            // **TEKANAN KEDUA**: Pegawai selesai mengantar
+            Serial.println("Pegawai selesai mengantar pesanan!");
+            sendStatus("Pegawai selesai mengantar");
+
+            // Reset order agar bisa menerima order baru
+            orderTaken = false;
+            currentOrder = "";
+            currentTable = 0;
+            tft.fillScreen(TFT_BLACK);
+            tft.setCursor(30, 40);
+            tft.println("Menunggu order...");
+
+            hideTime = false;  // Tampilkan kembali waktu setelah selesai
+
+            // Reset agar bisa kembali ke tekan pertama
+            waitingForSecondPress = false;
+        }
+
+        while (digitalRead(BUTTON_PIN) == HIGH) { delay(50); }  // Tunggu tombol dilepas
+        delay(300);  // Debounce
+    }
+
+    if (digitalRead(BUTTON_PIN) == LOW) {
+        buttonPressed = false;  // Reset tombol agar bisa ditekan lagi
     }
 }
