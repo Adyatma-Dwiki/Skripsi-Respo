@@ -12,6 +12,9 @@ const char *mqttServer = "192.168.0.100";
 const int mqttPort = 1884;
 String currentOrder = "";  // Menyimpan order saat ini
 int currentTable = 0;      // Menyimpan nomor meja aktif
+int currentOrderID = 0;
+unsigned long buttonPressStart = 0;
+bool helloSent = false;
 
 unsigned long messageStartTime = 0;
 bool buttonPressed = false;  
@@ -45,9 +48,13 @@ void callback(char *topic, byte *payload, unsigned int length)
     }
 
     const int table = doc["table_id"];
+    const char *order = doc["id"];
     const char *status = doc["status"];
+    currentTable = table;  // Simpan nomor meja saat ini
+    currentOrderID = doc["id"].as<int>(); // Simpan order saat ini
+
     int xx, yy;
-    String msg = "Pesanan Baru";
+    String msg = "Pesanan Baru"; 
     int x = tft.fontHeight();
     int y = tft.textWidth(msg);
     tft.fillScreen(TFT_BLACK);
@@ -101,6 +108,7 @@ void reconnectMQTT()
         {
             Serial.println("Terhubung ke MQTT!");
             client.subscribe("dapur/order");
+            
         }
         else
         {
@@ -111,11 +119,47 @@ void reconnectMQTT()
     }
 }
 
+void buttonSendHelloMessage() {
+    static bool button2Pressed = false;
+
+    if (digitalRead(BUTTON_PIN2) == HIGH && !button2Pressed) {
+        button2Pressed = true;
+
+        // Kirim hello langsung
+        Serial.println("Kirim hello!");
+        sendHelloMessage();
+
+        while (digitalRead(BUTTON_PIN2) == HIGH) { delay(50); }  // Tunggu tombol dilepas
+        delay(300);  // Debounce
+    }
+
+    if (digitalRead(BUTTON_PIN2) == LOW) {
+        button2Pressed = false;
+    }
+}
+
+
+
+void sendHelloMessage() {
+    StaticJsonDocument<128> doc;
+    doc["message"] = "hello";
+    doc["from"] = "jam_tangan";
+
+    char buffer[128];
+    serializeJson(doc, buffer);
+
+    client.publish("dapur/hello", buffer);
+}
+
+
 void sendStatus(const char *status)
 {
     StaticJsonDocument<256> doc;
     doc["status"] = status;
     doc["table_id"] = currentTable;
+    doc["id"] = currentOrderID;
+    
+
 
     char buffer[256];
     serializeJson(doc, buffer);

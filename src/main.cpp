@@ -9,6 +9,7 @@
 #define BL 4
 #define IO2 2
 #define BUTTON_PIN 25
+#define BUTTON_PIN2 35
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 7 * 3600;
@@ -26,6 +27,7 @@ void setup() {
     pinMode(BL, OUTPUT);
     pinMode(IO2, OUTPUT);
     pinMode(BUTTON_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_PIN2, INPUT_PULLUP);
 
     // Konfigurasi LED Backlight
     ledcAttachPin(BL, 1);
@@ -51,9 +53,11 @@ void loop() {
 
     if (!client.connected()) {
         reconnectMQTT();
+
     }
     client.loop();  // Pastikan MQTT tetap berjalan
 
+    buttonSendHelloMessage();  // Cek tombol untuk mengirim pesan "Hello"
     handleButton();  // Cek tombol
 
     if (WiFi.status() != WL_CONNECTED) {

@@ -8,6 +8,7 @@
 #include "TFTSetup/TFTSetup.h" // Jika perlu akses TFT
 
 #define BUTTON_PIN 25 // Sesuaikan pin tombol
+#define BUTTON_PIN2 35
 
 extern WiFiClient espClient;
 extern PubSubClient client;
@@ -21,5 +22,6 @@ void setupMQTT();
 void reconnectMQTT();
 void sendStatus(const char *status);
 void handleButton();
+void buttonSendHelloMessage();
 
 #endif
